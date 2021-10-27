@@ -1,0 +1,30 @@
+--city monthly hiring targets --WORKING
+
+SELECT c.city                                                                 AS city,
+       c.region                                                               AS region,
+       c.year::VARCHAR + '-' + RIGHT('00' + CONVERT(NVARCHAR(2), c.month), 2) AS month,
+
+       --orders
+       SUM(c.actual_orders)                                                   AS delivered_orders,
+
+       --drivers
+       ROUND(1.0 * SUM(c.contracted_drivers)
+                 / (DATEDIFF(d, MIN(c.date), MAX(c.date)) + 1), 0)            AS avg_contracted_drivers,
+       SUM(c.churned_drivers)                                                 AS churned_drivers,
+
+       --approved absence requests
+       ROUND(1.0 * SUM(c.drivers_sick + c.drivers_vacation + drivers_vacation_unpaid)
+                 / (DATEDIFF(d, MIN(c.date), MAX(c.date)) + 1), 0)            AS avg_drivers_away,
+
+       --driver hours
+       ROUND(1.0 * SUM(c.real_min_hours_monthly)
+                 / (DATEDIFF(d, MIN(c.date), MAX(c.date)) + 1), 0)            AS min_hours,
+       ROUND(1.0 * SUM(c.contractual_min_hours_monthly)
+                 / (DATEDIFF(d, MIN(c.date), MAX(c.date)) + 1), 0)            AS contracted_hours,
+       ROUND(SUM(c.worked_hours), 0)                                          AS worked_hours
+FROM trash.lm_de_at_city c
+WHERE c.year = 2020 --(c.year = '2020' AND c.month > DATE_PART(mon, GETDATE()) + 5)
+   OR (c.year = '2021' AND c.month < DATE_PART(mon, GETDATE()))
+GROUP BY 1, 2, 3
+ORDER BY 1, 3
+
